@@ -32,23 +32,29 @@ export const VoiceAssistant = () => {
   }, [speak]);
 
   const handleComposeInput = useCallback((input) => {
+    // Filter out common command words from the input
+    const cleanInput = input
+      .replace(/compose|email|send|recipient|from|to|message|subject|your|what is|who is|the/gi, '')
+      .trim()
+      .replace(/\s+/g, ' ');
+
     if (composeStep === 0) {
       // Sender email
-      setEmailData(prev => ({ ...prev, sender: input }));
+      setEmailData(prev => ({ ...prev, sender: cleanInput || input }));
       setComposeStep(1);
       const message = 'Who is the recipient?';
       setSystemMessage(message);
       speak(message);
     } else if (composeStep === 1) {
       // Recipient email
-      setEmailData(prev => ({ ...prev, recipient: input }));
+      setEmailData(prev => ({ ...prev, recipient: cleanInput || input }));
       setComposeStep(2);
       const message = 'What is the message?';
       setSystemMessage(message);
       speak(message);
     } else if (composeStep === 2) {
       // Message
-      setEmailData(prev => ({ ...prev, message: input }));
+      setEmailData(prev => ({ ...prev, message: cleanInput || input }));
       setComposeStep(3);
       const message = 'Say send to confirm, or cancel to start over';
       setSystemMessage(message);
