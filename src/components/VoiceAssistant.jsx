@@ -32,29 +32,38 @@ export const VoiceAssistant = () => {
   }, [speak]);
 
   const handleComposeInput = useCallback((input) => {
-    // Filter out common command words from the input
-    const cleanInput = input
-      .replace(/compose|email|send|recipient|from|to|message|subject|your|what is|who is|the/gi, '')
-      .trim()
-      .replace(/\s+/g, ' ');
+    console.log('Raw input:', input);
+    
+    // Filter out common command words and phrases from the input
+    let cleanInput = input
+      .replace(/^(compose|email|send|recipient|from|to|message|subject|your|what is|who is|the|it is|i said|you said)\s*/gi, '')
+      .replace(/\s*(compose|email|send|recipient|from|to|message|subject|your|what is|who is|the|it is)\s*$/gi, '')
+      .trim();
+
+    // Remove very short inputs (likely noise or partial words)
+    if (cleanInput.length < 3) {
+      cleanInput = input;
+    }
+
+    console.log('Clean input:', cleanInput);
 
     if (composeStep === 0) {
       // Sender email
-      setEmailData(prev => ({ ...prev, sender: cleanInput || input }));
+      setEmailData(prev => ({ ...prev, sender: cleanInput }));
       setComposeStep(1);
       const message = 'Who is the recipient?';
       setSystemMessage(message);
       speak(message);
     } else if (composeStep === 1) {
       // Recipient email
-      setEmailData(prev => ({ ...prev, recipient: cleanInput || input }));
+      setEmailData(prev => ({ ...prev, recipient: cleanInput }));
       setComposeStep(2);
       const message = 'What is the message?';
       setSystemMessage(message);
       speak(message);
     } else if (composeStep === 2) {
       // Message
-      setEmailData(prev => ({ ...prev, message: cleanInput || input }));
+      setEmailData(prev => ({ ...prev, message: cleanInput }));
       setComposeStep(3);
       const message = 'Say send to confirm, or cancel to start over';
       setSystemMessage(message);

@@ -47,11 +47,16 @@ export const useSpeechRecognition = (onResult) => {
         }
       }
 
-      const fullTranscript = finalTranscript || interimTranscript;
-      setTranscript(fullTranscript);
-
-      if (finalTranscript && onResult) {
-        onResult(finalTranscript.toLowerCase().trim());
+      // Only set transcript with final results to avoid showing partial words
+      if (finalTranscript) {
+        setTranscript(finalTranscript);
+        
+        if (onResult) {
+          onResult(finalTranscript.toLowerCase().trim());
+        }
+      } else if (interimTranscript) {
+        // Show interim results only for display, don't trigger onResult
+        setTranscript(interimTranscript);
       }
     };
 
