@@ -7,7 +7,7 @@ import { sampleEmails } from '../data/sampleEmails';
 export const VoiceAssistant = () => {
   const [systemState, setSystemState] = useState('idle'); // idle, composing, reading
   const [systemMessage, setSystemMessage] = useState('');
-  const [emailData, setEmailData] = useState({ recipient: '', subject: '', message: '' });
+  const [emailData, setEmailData] = useState({ sender: '', recipient: '', message: '' });
   const [composeStep, setComposeStep] = useState(0);
   const [currentEmailIndex, setCurrentEmailIndex] = useState(0);
   const [commandLog, setCommandLog] = useState([]);
@@ -25,23 +25,23 @@ export const VoiceAssistant = () => {
   const startComposeFlow = useCallback(() => {
     setSystemState('composing');
     setComposeStep(0);
-    setEmailData({ recipient: '', subject: '', message: '' });
-    const message = 'Who is the recipient?';
+    setEmailData({ sender: '', recipient: '', message: '' });
+    const message = 'What is your email address?';
     setSystemMessage(message);
     speak(message);
   }, [speak]);
 
   const handleComposeInput = useCallback((input) => {
     if (composeStep === 0) {
-      // Recipient
-      setEmailData(prev => ({ ...prev, recipient: input }));
+      // Sender email
+      setEmailData(prev => ({ ...prev, sender: input }));
       setComposeStep(1);
-      const message = 'What is the subject?';
+      const message = 'Who is the recipient?';
       setSystemMessage(message);
       speak(message);
     } else if (composeStep === 1) {
-      // Subject
-      setEmailData(prev => ({ ...prev, subject: input }));
+      // Recipient email
+      setEmailData(prev => ({ ...prev, recipient: input }));
       setComposeStep(2);
       const message = 'What is the message?';
       setSystemMessage(message);
@@ -60,13 +60,13 @@ export const VoiceAssistant = () => {
         setSystemMessage(message);
         speak(message);
         setSystemState('idle');
-        setEmailData({ recipient: '', subject: '', message: '' });
+        setEmailData({ sender: '', recipient: '', message: '' });
       } else if (input.includes('cancel') || input.includes('start over')) {
         const message = 'Cancelled. Say a command to continue';
         setSystemMessage(message);
         speak(message);
         setSystemState('idle');
-        setEmailData({ recipient: '', subject: '', message: '' });
+        setEmailData({ sender: '', recipient: '', message: '' });
       }
     }
   }, [composeStep, speak]);
@@ -170,7 +170,7 @@ export const VoiceAssistant = () => {
     setSystemMessage(message);
     speak(message);
     setSystemState('idle');
-    setEmailData({ recipient: '', subject: '', message: '' });
+    setEmailData({ sender: '', recipient: '', message: '' });
   }, [speak]);
 
   const sendEmail = useCallback(() => {
@@ -178,7 +178,7 @@ export const VoiceAssistant = () => {
     setSystemMessage(message);
     speak(message);
     setSystemState('idle');
-    setEmailData({ recipient: '', subject: '', message: '' });
+    setEmailData({ sender: '', recipient: '', message: '' });
   }, [speak]);
 
   const handleToggleListening = () => {
