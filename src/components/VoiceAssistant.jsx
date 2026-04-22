@@ -1,22 +1,25 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Mic, MicOff } from 'lucide-react';
+import { Mic, MicOff, Volume2 } from 'lucide-react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useTextToSpeech } from '../hooks/useTextToSpeech';
-import { StatusDisplay } from './StatusDisplay';
-import { EmailInbox } from './EmailInbox';
-import { EmailComposer } from './EmailComposer';
 import { sampleEmails } from '../data/sampleEmails';
 
 export const VoiceAssistant = () => {
   const [systemState, setSystemState] = useState('idle'); // idle, composing, reading
   const [systemMessage, setSystemMessage] = useState('');
   const [emailData, setEmailData] = useState({ recipient: '', subject: '', message: '' });
-  const [composeStep, setComposeStep] = useState(0); // 0: recipient, 1: subject, 2: message, 3: confirm
+  const [composeStep, setComposeStep] = useState(0);
   const [currentEmailIndex, setCurrentEmailIndex] = useState(0);
+  const [commandLog, setCommandLog] = useState([]);
   const isInitializedRef = useRef(false);
 
   const { isListening, transcript, error, startListening, stopListening, isSupported: speechSupported } = useSpeechRecognition();
   const { speak, isSupported: ttsSupported } = useTextToSpeech();
+
+  // Add to command log
+  const addToLog = useCallback((userInput, systemResponse) => {
+    setCommandLog(prev => [...prev, { user: userInput, system: systemResponse }].slice(-5));
+  }, []);
 
   // Helper functions
   const startComposeFlow = useCallback(() => {
@@ -128,19 +131,23 @@ export const VoiceAssistant = () => {
 
     if (systemState === 'idle') {
       if (command.includes('compose') || command.includes('write') || command.includes('send')) {
+        addToLog(command, 'Starting email composition');
         startComposeFlow();
       } else if (command.includes('read') || command.includes('inbox') || command.includes('emails')) {
+        addToLog(command, 'Reading inbox');
         startReadFlow();
       } else if (command.includes('help')) {
-        speak('You can say "compose email" to write a new email, or "read inbox" to hear your emails.');
-        setSystemMessage('You can say "compose email" to write a new email, or "read inbox" to hear your emails.');
+        const helpMessage = 'You can say "compose email" to write a new email, or "read inbox" to hear your emails.';
+        addToLog(command, helpMessage);
+        speak(helpMessage);
+        setSystemMessage(helpMessage);
       }
     } else if (systemState === 'composing') {
       handleComposeInput(command);
     } else if (systemState === 'reading') {
       handleReadingCommand(command);
     }
-  }, [systemState, speak, startComposeFlow, startReadFlow, handleComposeInput, handleReadingCommand]);
+  }, [systemState, speak, startComposeFlow, startReadFlow, handleComposeInput, handleReadingCommand, addToLog]);
 
   // Initialize with welcome message
   useEffect(() => {
@@ -189,15 +196,15 @@ export const VoiceAssistant = () => {
   // Browser support warning
   if (!speechSupported || !ttsSupported) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-6">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 max-w-2xl border-4 border-red-500">
-          <h1 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-4">
+      <div className="min-h-screen bg-black flex items-center justify-center p-6">
+        <div className="bg-gray-900 rounded-2xl p-8 max-w-2xl border-2 border-red-500">
+          <h1 className="text-3xl font-bold text-white mb-4">
             Browser Not Supported
           </h1>
-          <p className="text-lg text-gray-700 dark:text-gray-300 mb-4">
+          <p className="text-xl text-gray-300 mb-4">
             This application requires a browser that supports the Web Speech API.
           </p>
-          <p className="text-base text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-gray-400">
             Please use Chrome, Edge, or Safari for the best experience.
           </p>
         </div>
@@ -206,78 +213,74 @@ export const VoiceAssistant = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 text-center mb-4">
-            Voice-Controlled Email System
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400 text-center">
-            For the Visually Impaired
-          </p>
-        </header>
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6">
+      {/* Main Container */}
+      <div className="w-full max-w-2xl text-center">
+        {/* Title */}
+        <h1 className="text-4xl font-bold text-white mb-2">
+          Voice Email Assistant
+        </h1>
+        <p className="text-xl text-gray-400 mb-12">
+          Tap the microphone and speak
+        </p>
 
-        {/* Main Control Button */}
+        {/* Big Microphone Button */}
         <div className="flex justify-center mb-8">
           <button
             onClick={handleToggleListening}
-            className={`large-touch-target focus-visible-ring rounded-full p-6 transition-all ${
+            className={`large-touch-target focus-visible-ring rounded-full p-12 transition-all ${
               isListening
-                ? 'bg-green-500 hover:bg-green-600 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                ? 'bg-green-500 hover:bg-green-600 text-white animate-pulse shadow-lg shadow-green-500/50'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/50'
             }`}
             aria-label={isListening ? 'Stop listening' : 'Start listening'}
           >
-            {isListening ? <MicOff size={48} aria-hidden="true" /> : <Mic size={48} aria-hidden="true" />}
+            {isListening ? <MicOff size={64} aria-hidden="true" /> : <Mic size={64} aria-hidden="true" />}
           </button>
         </div>
 
-        {/* Status Display */}
-        <StatusDisplay
-          isListening={isListening}
-          transcript={transcript}
-          systemMessage={systemMessage}
-          error={error}
-        />
+        {/* Status Indicator */}
+        <div className="mb-6">
+          <p className="text-2xl font-semibold text-white mb-2">
+            {isListening ? 'Listening...' : 'Waiting for command...'}
+          </p>
+          {systemMessage && (
+            <p className="text-xl text-gray-300 flex items-center justify-center gap-2">
+              <Volume2 size={20} aria-hidden="true" />
+              {systemMessage}
+            </p>
+          )}
+        </div>
 
-        {/* Dynamic Content based on state */}
-        {systemState === 'composing' && (
-          <EmailComposer
-            emailData={emailData}
-            onCancel={cancelCompose}
-            onSend={sendEmail}
-          />
+        {/* Last Command */}
+        {transcript && (
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 mb-6">
+            <p className="text-sm text-gray-400 mb-1">You said:</p>
+            <p className="text-xl text-white font-medium">
+              {transcript}
+            </p>
+          </div>
         )}
 
-        {systemState === 'reading' && (
-          <EmailInbox
-            emails={sampleEmails}
-            currentEmailIndex={currentEmailIndex}
-            onNavigate={handleEmailNavigation}
-          />
+        {/* Command Log (Optional) */}
+        {commandLog.length > 0 && (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-left">
+            <p className="text-sm text-gray-500 mb-3">Recent interactions:</p>
+            {commandLog.map((log, index) => (
+              <div key={index} className="mb-3 last:mb-0">
+                <p className="text-sm text-blue-400">You: {log.user}</p>
+                <p className="text-sm text-gray-300">System: {log.system}</p>
+              </div>
+            ))}
+          </div>
         )}
 
-        {/* Help Section */}
-        {systemState === 'idle' && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-4 border-gray-900 dark:border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-              Available Commands
-            </h2>
-            <ul className="space-y-3 text-lg text-gray-700 dark:text-gray-300">
-              <li className="flex items-start gap-3">
-                <span className="font-bold text-blue-600 dark:text-blue-400">•</span>
-                <span>"Compose email" - Write a new email</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="font-bold text-blue-600 dark:text-blue-400">•</span>
-                <span>"Read inbox" - Hear your emails</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="font-bold text-blue-600 dark:text-blue-400">•</span>
-                <span>"Help" - Hear available commands</span>
-              </li>
-            </ul>
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-900/30 border border-red-500 rounded-xl p-4 mt-6">
+            <p className="text-lg text-red-300">
+              Error: {error}
+            </p>
           </div>
         )}
       </div>
