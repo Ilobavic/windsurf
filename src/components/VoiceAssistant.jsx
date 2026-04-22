@@ -262,6 +262,30 @@ export const VoiceAssistant = () => {
           </div>
         )}
 
+        {/* Email Composition State */}
+        {systemState === 'composing' && (
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 mb-6 text-left">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <Volume2 size={24} aria-hidden="true" />
+              Composing Email
+            </h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-start">
+                <span className="text-gray-400">From:</span>
+                <span className="text-white font-medium">{emailData.sender || 'Not provided'}</span>
+              </div>
+              <div className="flex justify-between items-start">
+                <span className="text-gray-400">To:</span>
+                <span className="text-white font-medium">{emailData.recipient || 'Not provided'}</span>
+              </div>
+              <div className="flex justify-between items-start">
+                <span className="text-gray-400">Message:</span>
+                <span className="text-white font-medium max-w-xs text-right">{emailData.message || 'Not provided'}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Command Log (Optional) */}
         {commandLog.length > 0 && (
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-left">
